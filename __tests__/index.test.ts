@@ -1,6 +1,21 @@
 import { expect, test } from "vitest"
-import { main } from "../src/index"
+import { AliExpressProvider } from "../src/index"
 
-test("main should be a function", () => {
-    expect(typeof main).toBe("function")
+test("AliExpressProvider should be instantiable", () => {
+    const provider = new AliExpressProvider({
+        appKey: "test",
+        appSecret: "test",
+        trackingId: "test",
+    })
+    expect(provider).toBeInstanceOf(AliExpressProvider)
+    expect(provider.name).toBe("AliExpress")
+})
+
+test("AliExpressProvider should support aliexpress.com", () => {
+    const provider = new AliExpressProvider({
+        appKey: "test",
+        appSecret: "test",
+        trackingId: "test",
+    })
+    expect(provider.supportsUrl("https://www.aliexpress.com/item/123.html")).toBe(true)
 })
