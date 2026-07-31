@@ -1,6 +1,6 @@
 {
   "name": "@afilimax/aliexpress-provider",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "commonjs",
   "repository": {
     "type": "git",
@@ -47,6 +47,6 @@
     "vitest": "^4.1.0"
   },
   "peerDependencies": {
-    "@afilimax/core": "^0.4.1"
+    "@afilimax/core": "^0.5.0"
   }
 }
