@@ -84,6 +84,7 @@ Para rodar o teste prático de integração, crie um arquivo `__tests__/auth.jso
 ---
 
 Produzido com ❤️ pela equipe **Afilimax**.
+
 ---
 
 ## Automatize sua operação de afiliados
