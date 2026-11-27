@@ -6,7 +6,7 @@
     "type": "git",
     "url": "https://github.com/Afilimax/aliexpress-provider.git"
   },
-  "homepage": "https://github.com/Afilimax/aliexpress-provider#readme",
+  "homepage": "https://afilimax.net",
   "bugs": {
     "url": "https://github.com/Afilimax/aliexpress-provider/issues"
   },
@@ -30,7 +30,8 @@
     "access": "public"
   },
   "keywords": [
-    "marcuth"
+    "marcuth",
+    "afilimax"
   ],
   "author": "Marcuth",
   "license": "MIT",
