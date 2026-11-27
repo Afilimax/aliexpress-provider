@@ -7,83 +7,164 @@
 
 # @afilimax/aliexpress-provider
 
-Provedor de links de afiliados para o AliExpress, integrado ao ecossistema Afilimax. Este pacote permite converter URLs de produtos do AliExpress em links de afiliados utilizando a API oficial Open Platform do AliExpress.
+Provedor oficial de afiliados do AliExpress para o ecossistema Afilimax. O pacote gera links de divulgação e pesquisa produtos pela Open Platform, convertendo as respostas da API para os tipos compartilhados do `@afilimax/core`.
+
+## Recursos
+
+- Geração de links de afiliado pelo método `aliexpress.affiliate.link.generate`.
+- Pesquisa de produtos pela API `aliexpress.affiliate.product.query`.
+- Assinatura das requisições com HMAC-SHA256.
+- Pesquisa paginada com moeda, idioma e país de entrega configuráveis.
+- Resultados de busca no formato `ScrapedProductPreview`.
+- Compatibilidade com `AffiliateProvider` e `AffiliateManager`.
 
 ## Instalação
 
 ```bash
-npm install @afilimax/aliexpress-provider
+npm install @afilimax/aliexpress-provider @afilimax/core
 ```
 
-> [!IMPORTANT]
-> Este pacote requer `@afilimax/core` como dependência de par (peer dependency).
+O `@afilimax/core` é uma dependência de par obrigatória, na versão `^0.5.0`.
 
 ## Como usar
 
-O `AliExpressProvider` utiliza autenticação baseada em `appKey`, `appSecret` e `trackingId` fornecidos pelo portal de desenvolvedores do AliExpress.
+Crie uma instância com as credenciais da Open Platform e informe a URL do produto:
 
 ```typescript
-import { AliExpressProvider } from "@afilimax/aliexpress-provider";
+import { AliExpressProvider } from "@afilimax/aliexpress-provider"
 
 const provider = new AliExpressProvider({
-    appKey: "seu_app_key",
-    appSecret: "seu_app_secret",
-    trackingId: "seu_tracking_id"
-});
+    appKey: process.env.ALIEXPRESS_APP_KEY!,
+    appSecret: process.env.ALIEXPRESS_APP_SECRET!,
+    trackingId: process.env.ALIEXPRESS_TRACKING_ID!,
+})
 
-async function run() {
-    const originalUrl = "https://pt.aliexpress.com/item/1005003430339815.html";
-    
+async function main() {
+    const productUrl = "https://pt.aliexpress.com/item/1005003430339815.html"
+
     try {
-        const affiliateUrl = await provider.createAffiliateUrl(originalUrl);
-        console.log("Link de Afiliado:", affiliateUrl); // Retorna o link s.click.aliexpress.com
+        const affiliateUrl = await provider.createAffiliateUrl(productUrl)
+        console.log("Affiliate URL:", affiliateUrl)
     } catch (error) {
-        console.error("Erro ao gerar link:", error.message);
+        console.error("Failed to create affiliate URL:", error)
     }
 }
 
-run();
+main()
 ```
 
-## Configurações
+Para pesquisar produtos sem informar uma URL específica:
 
-A interface `AliExpressProviderOptions` aceita as seguintes propriedades:
+```typescript
+const products = await provider.searchProducts({
+    query: "wireless headphones",
+    pageNo: 1,
+    pageSize: 10,
+    targetCurrency: "BRL",
+    targetLanguage: "PT",
+    shipToCountry: "BR",
+})
 
-| Propriedade | Tipo | Descrição |
+console.log("Products found:", products.length)
+```
+
+### Uso com AffiliateManager
+
+```typescript
+import { AffiliateManager } from "@afilimax/core"
+import { AliExpressProvider } from "@afilimax/aliexpress-provider"
+
+const manager = new AffiliateManager([
+    new AliExpressProvider({
+        appKey: process.env.ALIEXPRESS_APP_KEY!,
+        appSecret: process.env.ALIEXPRESS_APP_SECRET!,
+        trackingId: process.env.ALIEXPRESS_TRACKING_ID!,
+    }),
+])
+
+const affiliateUrl = await manager.createAffiliateUrl(
+    "https://pt.aliexpress.com/item/1005003430339815.html",
+)
+
+console.log(affiliateUrl)
+```
+
+O gerenciador seleciona o primeiro provedor compatível com o domínio e retorna `null` quando nenhum provedor aceita a URL.
+
+## Configuração
+
+A interface `AliExpressProviderOptions` possui três campos obrigatórios:
+
+| Opção | Tipo | Descrição |
 | :--- | :--- | :--- |
-| `appKey` | `string` | Sua App Key obtida no portal AliExpress Open Platform. |
-| `appSecret` | `string` | Sua App Secret correspondente para assinatura de requisições (HMAC-SHA256). |
-| `trackingId` | `string` | Seu Tracking ID para rastreamento de vendas no portal de afiliados. |
+| `appKey` | `string` | App Key obtida no AliExpress Open Platform. |
+| `appSecret` | `string` | Segredo usado para assinar as requisições com HMAC-SHA256. |
+| `trackingId` | `string` | Identificador de rastreamento das conversões. |
 
-## Domínios Suportados
+As credenciais devem ser mantidas em variáveis de ambiente ou em outro armazenamento seguro, fora do controle de versão.
 
-O provedor identifica automaticamente URLs dos seguintes domínios:
-- `aliexpress.com` (e subdomínios como `pt.aliexpress.com`)
+## Referência da API
+
+### `new AliExpressProvider(options)`
+
+Cria um provedor com as opções descritas em `AliExpressProviderOptions`.
+
+### `createAffiliateUrl(url: string): Promise<string>`
+
+Gera um link de divulgação para a URL informada. O método lança um erro quando a requisição HTTP falha, quando a API retorna um código diferente de `200` ou quando a resposta não contém um link de promoção.
+
+| Parâmetro | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `url` | `string` | URL do produto ou página aceita pela API de afiliados. |
+
+### `searchProducts(options): Promise<ScrapedProductPreview[]>`
+
+Pesquisa produtos e normaliza título, URL, imagem, preços, avaliação e identificador externo.
+
+| Opção | Tipo | Padrão | Descrição |
+| :--- | :--- | :--- | :--- |
+| `query` | `string` | Obrigatório | Termo de pesquisa. |
+| `pageNo` | `number` | `1` | Página da consulta. |
+| `pageSize` | `number` | `20` | Quantidade de itens por página. |
+| `targetCurrency` | `string` | `"BRL"` | Moeda dos preços retornados. |
+| `targetLanguage` | `string` | `"PT"` | Idioma da resposta. |
+| `shipToCountry` | `string` | `"BR"` | País de entrega. |
+
+### Domínios suportados
+
+- `aliexpress.com`, incluindo subdomínios como `pt.aliexpress.com`.
+
+A verificação pode ser feita diretamente com `provider.supportsUrl(url)`.
 
 ## Desenvolvimento
 
-### Scripts Disponíveis
+Instale as dependências com `npm install`. Os scripts disponíveis são:
 
-- `npm run build`: Compila o projeto para o diretório `dist`.
-- `npm run test`: Executa os testes unitários e o teste prático (integração) com Vitest.
-- `npm run lint`: Verifica e corrige problemas de estilo de código.
-- `npm run format`: Formata o código fonte usando Prettier.
+| Comando | Finalidade |
+| :--- | :--- |
+| `npm run dev` | Executa `src/index.ts` com `ts-node`. |
+| `npm run build` | Compila o TypeScript para `dist/`. |
+| `npm test` | Executa os testes com Vitest. |
+| `npm run test:watch` | Executa os testes em modo de observação. |
+| `npm run test:cov` | Executa os testes com cobertura. |
+| `npm run lint` | Executa o ESLint com correção automática. |
+| `npm run format` | Formata os arquivos de `src/` com Prettier. |
 
-### Testes Práticos
-
-Para rodar o teste prático de integração, crie um arquivo `__tests__/auth.json` com suas credenciais reais:
+O teste prático de geração de link usa `__tests__/auth.json`. Sem esse arquivo, ou sem todas as credenciais, o teste é ignorado:
 
 ```json
 {
-    "appKey": "SUA_KEY",
-    "appSecret": "SEU_SECRET",
-    "trackingId": "SEU_TRACKING_ID"
+    "appKey": "your-app-key",
+    "appSecret": "your-app-secret",
+    "trackingId": "your-tracking-id"
 }
 ```
 
----
+Não versione esse arquivo nem credenciais reais.
 
-Produzido com ❤️ pela equipe **Afilimax**.
+## Licença
+
+Distribuído sob a licença [MIT](./LICENSE).
 
 ---
 
